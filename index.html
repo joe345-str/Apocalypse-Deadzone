@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>DEAD ZONE — Zombie Shooter</title>
+  <meta name="description" content="DEAD ZONE — HTML5 zombie wave survival shooter. Fight hordes in 3rd person or first-person FPS view.">
+  <meta name="theme-color" content="#e8001a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     TITLE SCREEN
+════════════════════════════════════════════════════ -->
+<div id="sTitle" class="screen active">
+  <div class="drip"></div>
+
+  <div class="title-inner">
+    <div class="title-rule"></div>
+    <div class="title-eyebrow">survival · horror · shooter</div>
+
+    <div class="gtitle">
+      <span class="word-dead">DEAD</span><br>
+      <span class="word-zone">ZONE</span>
+    </div>
+
+    <div class="gsub">◈ &nbsp; wave survival &nbsp; ◈ &nbsp; fps &amp; top-down &nbsp; ◈</div>
+
+    <div class="title-menu">
+      <button class="mbtn g" onclick="SFX.unlock(); startGame()">▶ &nbsp; START GAME</button>
+      <button class="mbtn" onclick="gotoInfo('sHTP')">
+        <span>HOW TO PLAY</span>
+      </button>
+      <button class="mbtn" onclick="gotoInfo('sManual')">
+        <span>GAME MANUAL</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="title-footer">
+    <span>HTML5 CANVAS · WEB AUDIO</span>
+    <span>V 2.0</span>
+    <span>FREE TO PLAY</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     HOW TO PLAY
+════════════════════════════════════════════════════ -->
+<div id="sHTP" class="screen">
+  <div class="stitle" style="color:var(--green); text-shadow:0 0 30px rgba(0,230,118,0.4)">HOW TO PLAY</div>
+  <div class="cards">
+
+    <div class="card">
+      <h3>🎯 Objective</h3>
+      <ul>
+        <li>Survive endless zombie waves</li>
+        <li>Kill zombies to earn points</li>
+        <li>Each wave gets bigger and faster</li>
+        <li>Don't let health reach zero</li>
+        <li>Beat the high score</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>⌨️ Keyboard &amp; Mouse</h3>
+      <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>↑↓←→</kbd> &nbsp;Move</p>
+      <p><kbd>Mouse</kbd> &nbsp;Aim direction</p>
+      <p><kbd>Click</kbd> / <kbd>Space</kbd> &nbsp;Shoot</p>
+      <p><kbd>R</kbd> &nbsp;Reload &nbsp;&nbsp; <kbd>V</kbd> &nbsp;Switch view</p>
+      <p><kbd>P</kbd> / <kbd>Esc</kbd> &nbsp;Pause</p>
+    </div>
+
+    <div class="card">
+      <h3>📱 Mobile Touch</h3>
+      <ul>
+        <li>D-Pad bottom-left — move</li>
+        <li>🔫 SHOOT button — fire</li>
+        <li>↺ RELOAD button — reload</li>
+        <li>3P / 1P — switch view mode</li>
+        <li>⏸ in HUD — pause</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>👁️ View Modes</h3>
+      <ul>
+        <li><b style="color:var(--green)">3RD PERSON</b> — top-down. Camera follows you. Mouse aims.</li>
+        <li><b style="color:var(--amber)">1ST PERSON</b> — FPS raycaster. Red crosshair. Shoot what you see.</li>
+        <li>Switch anytime with <kbd>V</kbd></li>
+      </ul>
+    </div>
+
+    <div class="card r">
+      <h3>❤️ HUD Indicators</h3>
+      <ul>
+        <li>Red bar — player health</li>
+        <li>Green pips — bullets in clip</li>
+        <li>Dim pips — spent ammo (reload!)</li>
+        <li>Orange number — current wave</li>
+        <li>Top right — score</li>
+      </ul>
+    </div>
+
+    <div class="card o">
+      <h3>🧟 Zombie Types</h3>
+      <ul>
+        <li>🟢 Walker — slow, 2 hits</li>
+        <li>🔴 Runner — fast, 1 hit kill</li>
+        <li>⚫ Tank — slow, 6 hits</li>
+        <li>🟣 Boss — wave 5+, 20 hits</li>
+        <li>All speed up each wave</li>
+      </ul>
+    </div>
+
+  </div>
+  <button class="mbtn" onclick="smartBack()" style="margin-top:4px; width:min(340px,90vw)">← BACK</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     GAME MANUAL
+════════════════════════════════════════════════════ -->
+<div id="sManual" class="screen">
+  <div class="stitle" style="color:var(--amber); text-shadow:0 0 30px rgba(255,140,0,0.35)">GAME MANUAL</div>
+  <div class="mwrap">
+
+    <h3>Overview</h3>
+    <p>DEAD ZONE is a dual-view zombie survival shooter. Switch freely between a top-down 3rd person view and a full DDA raycaster first-person perspective. Fight endless waves using your pistol — manage ammo and survive.</p>
+
+    <h3>Scoring</h3>
+    <div class="sr"><span>Walker Kill</span><span>+100</span></div>
+    <div class="sr"><span>Runner Kill</span><span>+150</span></div>
+    <div class="sr"><span>Tank Kill</span><span>+200</span></div>
+    <div class="sr"><span>Boss Kill</span><span>+1,000</span></div>
+    <div class="sr"><span>Wave Clear Bonus</span><span>+500 × wave</span></div>
+
+    <h3>Zombie Stats</h3>
+    <div class="sr"><span>🟢 Walker</span><span>HP:2 · Spd:1.2 · Dmg:1</span></div>
+    <div class="sr"><span>🔴 Runner</span><span>HP:1 · Spd:2.8 · Dmg:1</span></div>
+    <div class="sr"><span>⚫ Tank</span><span>HP:6 · Spd:0.8 · Dmg:2</span></div>
+    <div class="sr"><span>🟣 Boss (wave 5+)</span><span>HP:20 · Spd:1.5 · Dmg:3</span></div>
+
+    <h3>Wave Progression</h3>
+    <p>Wave 1 starts with 8 zombies. Each wave adds 3 more. Speed increases 5% per wave. Bosses appear from wave 5. Health restores +30 HP between waves.</p>
+
+    <h3>Publish Free — Earn Revenue</h3>
+    <div class="pgrid">
+      <div class="pc"><strong>ITCH.IO</strong>Free. Set your price or donations.<br><span>itch.io/games/new</span></div>
+      <div class="pc"><strong>GAMEMONETIZE</strong>Auto ads, ~50% revenue share.<br><span>gamemonetize.com</span></div>
+      <div class="pc"><strong>GAMEDISTRIBUTION</strong>Large network, great CPMs.<br><span>gamedistribution.com</span></div>
+      <div class="pc"><strong>CRAZYGAMES</strong>High traffic, premium rates.<br><span>developer.crazygames.com</span></div>
+      <div class="pc"><strong>POKI</strong>Best HTML5 CPMs. Apply first.<br><span>developers.poki.com</span></div>
+      <div class="pc"><strong>NEWGROUNDS</strong>Community + ad share.<br><span>newgrounds.com</span></div>
+    </div>
+
+    <h3>Technical</h3>
+    <div class="sr"><span>Engine</span><span>HTML5 Canvas 2D + DDA Raycaster</span></div>
+    <div class="sr"><span>Audio</span><span>Web Audio API — zero external files</span></div>
+    <div class="sr"><span>Structure</span><span>Separate HTML / CSS / JS folders</span></div>
+    <div class="sr"><span>Mobile</span><span>Full touch, responsive</span></div>
+    <div class="sr"><span>Browsers</span><span>Chrome · Firefox · Safari · Edge</span></div>
+
+  </div>
+  <button class="mbtn" onclick="smartBack()" style="margin-bottom:28px; margin-top:6px; width:min(340px,90vw)">← BACK</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     GAME SCREEN
+════════════════════════════════════════════════════ -->
+<div id="sGame" class="screen">
+  <canvas id="gc"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hg">
+      <div class="hbw">
+        <span class="hlbl">health</span>
+        <div class="hbar"><div class="hfill" id="hfill" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="hg">
+      <div class="hbw">
+        <span class="hlbl">ammo</span>
+        <div class="adots" id="adots"></div>
+      </div>
+    </div>
+    <div class="hg">
+      <div class="hbw">
+        <span class="hlbl">wave</span>
+        <div id="wnum">01</div>
+      </div>
+    </div>
+    <div class="hg ml">
+      <div class="hbw" style="align-items:flex-end">
+        <span class="hlbl">score</span>
+        <div class="hval" id="scoreEl" style="color:var(--green)">0</div>
+      </div>
+    </div>
+    <button class="hbtn" id="autoAimBtn" onclick="toggleAutoAim()" title="Toggle Auto-Aim (TAB)">⊕ AIM</button>
+    <button class="hbtn on" id="v3b" onclick="setView('3p')">3P</button>
+    <button class="hbtn"    id="v1b" onclick="setView('1p')">1P</button>
+    <button class="hbtn pz"          onclick="togglePause()">⏸</button>
+  </div>
+
+  <div id="xhair"><span class="ch-b"></span><span class="ch-l"></span><span class="ch-dot"></span></div>
+  <div id="mflash"></div>
+  <div id="notifs"></div>
+  <div id="wann"></div>
+  <div id="sndBtn" onclick="SFX.toggle()">🔊</div>
+
+  <!-- Mobile Controls -->
+  <div id="mctrl">
+    <div class="dpad">
+      <div class="db sp"></div>  <div class="db" id="dU">↑</div>  <div class="db sp"></div>
+      <div class="db" id="dL">←</div>  <div class="db sp"></div>  <div class="db" id="dR">→</div>
+      <div class="db sp"></div>  <div class="db" id="dD">↓</div>  <div class="db sp"></div>
+    </div>
+    <div class="sbtn" id="sbtn">
+      <span class="si">🔫</span>
+      <span class="st">SHOOT</span>
+    </div>
+    <div class="rbtn" id="rbtn">
+      <span class="ri">↺</span>
+      <span>RELOAD</span>
+    </div>
+    <div class="aabtn" id="aabtnMobile" onclick="toggleAutoAim()">
+      <span>⊕</span>
+      <span>AIM</span>
+    </div>
+  </div>
+
+  <!-- PAUSE -->
+  <div class="ovr" id="ovrPause">
+    <div class="otitle" style="color:var(--green)">PAUSED</div>
+    <div class="osub" id="pauseStats"></div>
+    <button class="mbtn g" onclick="togglePause()">▶ &nbsp;RESUME</button>
+    <button class="mbtn"   onclick="gotoInfo('sHTP')">HOW TO PLAY</button>
+    <button class="mbtn"   onclick="quitToTitle()">MAIN MENU</button>
+  </div>
+
+  <!-- WAVE CLEAR -->
+  <div class="ovr" id="ovrWave">
+    <div class="otitle" style="color:var(--amber)" id="wcTitle">WAVE 1 CLEAR</div>
+    <div class="osub" id="wcStats"></div>
+    <button class="mbtn g" onclick="nextWave()">NEXT WAVE &nbsp;▶</button>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="ovr" id="ovrDead">
+    <div class="otitle" style="color:var(--red)">YOU DIED</div>
+    <div class="osub" id="goStats"></div>
+    <button class="mbtn g" onclick="startGame()">↺ &nbsp;TRY AGAIN</button>
+    <button class="mbtn"   onclick="quitToTitle()">MAIN MENU</button>
+  </div>
+
+</div>
+
+<script src="js/game.js"></script>
+</body>
+</html>
