@@ -34,7 +34,9 @@ function cH(){ return canvas.height / DPR; }
 //  SPRITE CACHE SYSTEM
 // ================================================================
 const SPRITES = {};
-
+"scripts": {
+  "build": "webpack"
+}
 
 
 // ── NAVIGATION ───────────────────────────────────────────────────
