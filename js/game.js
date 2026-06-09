@@ -6,6 +6,15 @@
 // ================================================================
 
 // ── GLOBALS ──────────────────────────────────────────────────────
+const SPRITES_TO_PRELOAD = [
+  '/assets/sprites/player.png',
+  '/assets/sprites/zombie_walk.png',
+  '/assets/sprites/alien_ufo.png',
+  '/assets/sprites/bullet.png',
+  '/assets/sprites/explosion.png'
+];
+SPRITES_TO_PRELOAD.forEach(getSprite);
+["/assets/sprites/ufo.png"].forEach(src => getSprite(src));
 const canvas   = document.getElementById('gc');
 const C        = canvas.getContext('2d');
 const HUD_H    = 56;
@@ -36,11 +45,17 @@ let allies = [];
 // ================================================================
 //  SPRITE CACHE SYSTEM
 // ================================================================
-const SPRITES = {};
-"scripts": {
-  "build": "webpack"
-}
+// -------------------- SPRITE CACHE --------------------
+const SpriteCache = new Map();
 
+function getSprite(src) {
+  if (SpriteCache.has(src)) return SpriteCache.get(src);
+
+  const img = new Image();
+  img.src = src;
+  SpriteCache.set(src, img);
+  return img;
+}
 
 // ── NAVIGATION ───────────────────────────────────────────────────
 function showScreen(id){
@@ -86,6 +101,15 @@ function returnToGame(){
 //  SOUND ENGINE -- Web Audio API procedural SFX bank
 //  All sounds generated with oscillators + noise, zero files
 // ================================================================
+const AudioCache = new Map();
+
+async function loadAudioCached(src) {
+  if (AudioCache.has(src)) return AudioCache.get(src);
+
+  const buffer = await loadMusic(src); // your existing loader
+  AudioCache.set(src, buffer);
+  return buffer;
+}
 const SFX=(()=>{
   let ctx=null, muted=false, musicTimer=null;
 
@@ -270,6 +294,24 @@ const SFX=(()=>{
     [380,280,190,100].forEach((f,i)=>osc(f,'sawtooth',0.35,0.28,f*0.5,i*150));
     noise(0.3,0.8,200,'lowpass',100);
   }
+// ---- AUDIO FILE LOADER ----
+async function loadMusic(url) {
+  const ctx = ac();
+  const res = await fetch(url);
+  const arr = await res.arrayBuffer();
+  return await ctx.decodeAudioData(arr);
+}
+
+// ---- AUDIO CACHE ----
+const AudioCache = new Map();
+
+async function loadAudioCached(src) {
+  if (AudioCache.has(src)) return AudioCache.get(src);
+
+  const buffer = await loadMusic(src);
+  AudioCache.set(src, buffer);
+  return buffer;
+}
 
   // ── MUSIC ─────────────────────────────────────────────────────
   function startMusic(){
@@ -308,8 +350,16 @@ const SFX=(()=>{
     document.getElementById('sndBtn').textContent=muted?'🔇':'🔊';
     if(muted) stopMusic(); else startMusic();
   }
-  function unlock(){ ac(); startMusic(); }
-
+ async function unlock(){
+  const buffer = await loadAudioCached('/assets/audio/silver_bullet.wav');
+  const ctx = ac();
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(ctx.destination);
+  source.start(0);
+  window._bgm = source;
+}
   return{
     gunshot,shotgunBlast,emptyClick,reload,
     zombieGroan,zombieScream,hit,death,bossRoar,
@@ -446,7 +496,28 @@ function getAutoAimTarget(p){
   let best=null, bestScore=Infinity;
   for(const z of G.zombies){
     const dist=Math.hypot(p.x-z.x,p.y-z.y);
-    if(dist>SNAP_RANGE) continue;
+   buildSpawnQueue(); updateHUD();waveAnnounce(G.wave);
+  SFX.startMusic(); loop();
+}
+function endWave(){
+  cancelAnimationFrame(animId); SFX.waveClear(); SFX.stopMusic();
+  const bonus=500*G.wave; G.score+=bonus; updateHUD();
+  document.getElementById('wcTitle').textContent=`WAVE ${G.wave} CLEAR!`;
+  document.getElementById('wcStats').innerHTML=`BONUS +${bonus.toLocaleString()} PTS<br>SCORE: ${G.score.toLocaleString()}`;
+  document.getElementById('ovrWave').classList.add('show');
+}
+function gameOver(){
+  cancelAnimationFrame(animId); SFX.playerDeath(); SFX.stopMusic();
+  document.getElementById('goStats').innerHTML=`SCORE: ${G.score.toLocaleString()}<br>SURVIVED: WAVE ${G.wave}`;
+  document.getElementById('ovrDead').classList.add('show');
+}
+
+// ── MAIN LOOP ─────────────────────────────────────────────────────
+function loop(){ update(); render(); animId=requestAnimationFrame(loop); }
+
+// ================================================================
+//  UPDATE
+// if(dist>SNAP_RANGE) continue;
     const hysteresis=(z===aimTarget)?0.7:1.0;
     const score=dist*hysteresis;
     if(score<bestScore){bestScore=score;best=z;}
@@ -523,49 +594,7 @@ function startGame(){
   buildSpawnQueue(); waveAnnounce(G.wave);
   showScreen('sGame'); SFX.unlock(); SFX.startMusic(); loop();
 }
-function nextWave(){
-  cancelAnimationFrame(animId);
-  document.getElementById('ovrWave').classList.remove('show');
-  G.wave++; G.ammo=G.maxAmmo;
-  G.player.hp=Math.min(G.player.maxHp,G.player.hp+30);
-  // Increase apocalyptic frequency every wave
-  G.nextAsteroid=Math.max(90, 180-G.wave*15);
-  G.nextEarthquake=Math.max(180, 300-G.wave*20);
-  buildSpawnQueue(); updateHUD(); waveAnnounce(G.wave);
-  SFX.startMusic(); loop();
-}
-function endWave(){
-  cancelAnimationFrame(animId); SFX.waveClear(); SFX.stopMusic();
-  const bonus=500*G.wave; G.score+=bonus; updateHUD();
-  document.getElementById('wcTitle').textContent=`WAVE ${G.wave} CLEAR!`;
-  document.getElementById('wcStats').innerHTML=`BONUS +${bonus.toLocaleString()} PTS<br>SCORE: ${G.score.toLocaleString()}`;
-  document.getElementById('ovrWave').classList.add('show');
-}
-function gameOver(){
-  cancelAnimationFrame(animId); SFX.playerDeath(); SFX.stopMusic();
-  document.getElementById('goStats').innerHTML=`SCORE: ${G.score.toLocaleString()}<br>SURVIVED: WAVE ${G.wave}`;
-  document.getElementById('ovrDead').classList.add('show');
-}
-
-// ── MAIN LOOP ─────────────────────────────────────────────────────
-function loop(){ update(); render(); animId=requestAnimationFrame(loop); }
-
-// ================================================================
-//  UPDATE
-// ================================================================
-function update(){
-  if(paused||!G.player) return;
-  const p=G.player;
-
-  // Movement
-  let dx=0,dy=0;
-  if(keys['w']||keys['arrowup']   ||mDirs.u) dy-=p.speed;
-  if(keys['s']||keys['arrowdown'] ||mDirs.d) dy+=p.speed;
-  if(keys['a']||keys['arrowleft'] ||mDirs.l) dx-=p.speed;
-  if(keys['d']||keys['arrowright']||mDirs.r) dx+=p.speed;
-  // Earthquake pushes player randomly
-  if(G.earthquakeActive){
-    dx+=(Math.random()-0.5)*G.earthquakeDur*0.08;
+function nextWave(){arthquakeDur*0.08;
     dy+=(Math.random()-0.5)*G.earthquakeDur*0.08;
   }
   if(dx&&dy){dx*=0.707;dy*=0.707;}
@@ -589,7 +618,28 @@ function update(){
     }
   }else{
     aimTarget=null;
-    if(viewMode==='3p') p.angle=Math.atan2(mouseY-p.y,mouseX-p.x);
+    if(viewMode==='3p') p.angle=M
+  cancelAnimationFrame(animId);
+  document.getElementById('ovrWave').classList.remove('show');
+  G.wave++; G.ammo=G.maxAmmo;
+  G.player.hp=Math.min(G.player.maxHp,G.player.hp+30);
+  // Increase apocalyptic frequency every wave
+  G.nextAsteroid=Math.max(90, 180 -G.wave*15);
+  G.nextEarthquake=Math.max(180, 300-G.wave*20);
+   ================================================================
+function update(){
+  if(paused||!G.player) return;
+  const p=G.player;
+
+  // Movement
+  let dx=0,dy=0;
+  if(keys['w']||keys['arrowup']   ||mDirs.u) dy-=p.speed;
+  if(keys['s']||keys['arrowdown'] ||mDirs.d) dy+=p.speed;
+  if(keys['a']||keys['arrowleft'] ||mDirs.l) dx-=p.speed;
+  if(keys['d']||keys['arrowright']||mDirs.r) dx+=p.speed;
+  // Earthquake pushes player randomly
+  if(G.earthquakeActive){
+    dx+=(Math.random()-0.5)*G.eath.atan2(mouseY-p.y,mouseX-p.x);
     else if(dx||dy) p.angle=Math.atan2(dy,dx);
   }
 
@@ -668,7 +718,22 @@ function update(){
       if(p.hp<=0){gameOver();return;}
     }
   }
-
+let fps = 0, fpsAccum = 0, fpsFrames = 0;
+function loop(now) {
+  const dt = (now - lastTime) / 1000;
+  lastTime = now;
+  fpsAccum += 1 / dt;
+  fpsFrames++;
+  if (fpsFrames >= 10) {
+    fps = fpsAccum / fpsFrames;
+    fpsAccum = 0; fpsFrames = 0;
+  }
+  update(dt);
+  draw();
+  ctx.fillStyle = 'white';
+  ctx.fillText(fps.toFixed(0) + ' FPS', 10, 20);
+  requestAnimationFrame(loop);
+}
   // Update bullets
   if(G.particles.length>200) G.particles.splice(0,G.particles.length-200);
   for(let i=G.bullets.length-1;i>=0;i--){
@@ -688,8 +753,7 @@ function update(){
           SFX.death();
           spawnBlood(z.x,z.y,22);
           for(let k=0;k<6;k++) G.bloodDecals.push({
-            x:z.x+(-18+Math.random()*36),y:z.y+(-18+Math.random()*36),
-            r:4+Math.random()*9,a:0.8,oval:0.4+Math.random()*0.9,rot:Math.random()*Math.PI});
+            x:z.x+(-18+Math.random()*36),y:z.y+(ath.random()*0.9,rot:Math.random()*Math.PI});
           if(z===aimTarget) aimTarget=null;
           G.zombies.splice(j,1); updateHUD();
         }
@@ -698,114 +762,68 @@ function update(){
     }
     if(hit) G.bullets.splice(i,1);
   }
+// -------------------- UFO SYSTEM (Improved Sprite + Cache) --------------------
+class AnimatedSprite {
+  constructor(img, frameW, frameH, frames, fps) {
+    this.img = img;
+    this.frameW = frameW;
+    this.frameH = frameH;
+    this.frames = frames;
+    this.fps = fps;
+    this.time = 0;
+  }-18+Math.random()*36),
+            r:4+Math.random()*9,a:0.8,oval:0.4+M
+  update(dt) {
+    this.x += this.speed * dt; // instead of per-frame constants
+ }
+  let lastTime = performance.now();
+function loop(now) {
+  const dt = (now - lastTime) / 1000; // seconds
+  lastTime = now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+draw(ctx, x, y) {
+    const index = Math.floor(this.time * this.fps) % this.frames;
+    const sx = index * this.frameW;
+    ctx.drawImage(this.img, sx, 0, this.frameW, this.frameH, x, y, this.frameW, this.frameH);
+  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// draw: background → environment → enemies → player → bullets → UI
+}
 class UFO {
-    constructor(x, y, friendly = true) {
-        this.x = x;
-        this.y = y;
-        this.w = 48;
-        this.h = 24;
-        this.friendly = friendly;
-        this.hp = friendly ? 200 : 300;
-        this.cooldown = 0;
-        this.speed = friendly ? 0.5 : 1.2;
-    }
-
-    update(player, zombies, bullets, allies) {
-        // Hover movement
-        this.x += Math.sin(Date.now() / 600) * this.speed;
-
-        if (this.friendly) {
-            this.updateFriendly(zombies, allies);
-        } else {
-            this.updateHostile(player, bullets);
-        }
-    }
-
-    updateFriendly(zombies, allies) {
-        if (this.cooldown > 0) this.cooldown--;
-
-        // Shoot zombies
-        let target = zombies[0];
-        if (target && this.cooldown === 0) {
-            bullets.push({
-                x: this.x,
-                y: this.y + 20,
-                dx: (target.x - this.x) / 20,
-                dy: (target.y - this.y) / 20,
-                friendly: true
-            });
-            this.cooldown = 40;
-        }
-// Spawn friendly UFO once per game
-if (!friendlyUFO) {
-    friendlyUFO = new UFO(canvas.width/2, 60, true);
-}
-
-// Spawn hostile UFO during apocalyptic waves
-if (apocalypseActive && !hostileUFO) {
-    hostileUFO = new UFO(canvas.width/2, 80, false);
-}
-if (friendlyUFO) friendlyUFO.update(player, zombies, bullets, allies);
-if (hostileUFO) hostileUFO.update(player, zombies, bullets);
-
-        // Drop alien soldier
-        if (Math.random() < 0.002) {
-            allies.push(new AlienSoldier(this.x, this.y + 20));
-        }
-    }
-
-    updateHostile(player, bullets) {
-        if (this.cooldown > 0) this.cooldown--;
-
-        // Fire at player
-        if (this.cooldown === 0) {
-            bullets.push({
-                x: this.x,
-                y: this.y + 20,
-                dx: (player.x - this.x) / 25,
-                dy: (player.y - this.y) / 25,
-                friendly: false
-            });
-            this.cooldown = 60;
-        }
-    }
-
-    draw(ctx) {
-        ctx.fillStyle = this.friendly ? "#7fffd4" : "#ff4f4f";
-        ctx.fillRect(this.x - this.w/2, this.y - this.h/2, this.w, this.h);
-
-        // Dome
-        ctx.fillStyle = "#a0e8ff";
-        ctx.fillRect(this.x - 12, this.y - 20, 24, 12);
-    }
-}
-class AlienSoldier {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.speed = 2.2;
-        this.size = 12;
-        this.hp = 40;
+        this.width = 64;
+        this.height = 32;
+        this.speed = 2 + Math.random() * 2;
+        this.alive = true;
+
+        // Cached sprite
+        this.sprite = loadSprite("assets/sprites/ufo.png");
     }
 
-    update(zombies) {
-        let target = zombies[0];
-        if (!target) return;
+    update() {
+        this.x += this.speed;
 
-        let dx = target.x - this.x;
-        let dy = target.y - this.y;
-        let d = Math.hypot(dx, dy);
-
-        this.x += (dx / d) * this.speed;
-        this.y += (dy / d) * this.speed;
-
-        // Damage zombie
-        if (d < 20) {
-            target.hp -= 1.5;
+        if (this.x > canvas.width + 200) {
+            this.alive = false;
         }
     }
 
     draw(ctx) {
+        if (this.sprite.complete) {
+            ctx.drawImage(this.sprite, this.x, this.y, this.width, this.height);
+        } else {
+            // fallback placeholder
+            ctx.fillStyle = "silver";
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+    }
+}
+  draw(ctx) {
         ctx.fillStyle = "#32ff7e";
         ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
     }
@@ -814,13 +832,11 @@ class AlienSoldier {
 if (!friendlyUFO) {
     friendlyUFO = new UFO(canvas.width/2, 60, true);
 }
-
 // Spawn hostile UFO during apocalyptic waves
 if (apocalypseActive && !hostileUFO) {
     hostileUFO = new UFO(canvas.width/2, 80, false);
 }
-
-  // Particles
+ // Particles
   for(let i=G.particles.length-1;i>=0;i--){
     const pt=G.particles[i];
     pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.1; pt.vx*=0.92; pt.life--;
@@ -833,7 +849,20 @@ if (apocalypseActive && !hostileUFO) {
     G.bloodDecals[i].a-=0.002;
     if(G.bloodDecals[i].a<=0) G.bloodDecals.splice(i,1);
   }
-
+switch (this.state) {
+  case 'idle':
+    if (distanceToPlayer < 400) this.state = 'chase';
+    break;
+  case 'chase':
+    // move toward player
+    this.x += this.speed * Math.cos(angleToPlayer) * dt;
+    this.y += this.speed * Math.sin(angleToPlayer) * dt;
+    if (distanceToPlayer < 40) this.state = 'attack';
+    break;
+  case 'attack':
+    // damage player on a cooldown, then maybe back to chase
+    break;
+}
   // ================================================================
   //  APOCALYPTIC ENVIRONMENT UPDATE
   // ================================================================
@@ -849,7 +878,8 @@ if (apocalypseActive && !hostileUFO) {
     G.waveDone=true; setTimeout(endWave,600);
   }
 }
-
+const leadX = player.x + player.vx * 0.3;
+const leadY = player.y + player.vy * 0.3;
 function spawnBlood(x,y,n){
   for(let i=0;i<n;i++){
     const a=Math.random()*Math.PI*2, s=Math.random()*4+1;
@@ -1004,6 +1034,28 @@ function updateFireSystem(){
   if(G.nextFire<=0){
     // Spawn fire column at random edge position
     G.fires.push({
+}
+
+// ── DEBRIS SYSTEM ─────────────────────────────────────────────────
+function updateDebrisSystem(){
+  // Periodically spawn falling debris
+  if(Math.random()<0.008+G.wave*0.002){
+    G.debris.push({
+      x:Math.random()*cW(), y:-20,
+      vx:(-0.5+Math.random())*2, vy:2+Math.random()*4,
+      life:80+Math.random()*60, rot:Math.random()*Math.PI*2,
+      rotV:(-0.1+Math.random()*0.2),
+      w:6+Math.random()*20, h:4+Math.random()*14,
+      col:Math.random()<0.5?'#5a4a30':'#444438'
+    });
+  }
+  for(let i=G.debris.length-1;i>=0;i--){
+    const d=G.debris[i];
+    d.x+=d.vx; d.y+=d.vy; d.vy+=0.12; d.rot+=d.rotV; d.life--;
+    // Impact
+    if(d.y>cH()&&!d.landed){
+      d.landed=true; d.vy=0; d.vx=0;
+      SFX.debrisCrash();
       x: Math.random()*cW(),
       y: cH()-5,
       life: 120+Math.random()*180,
@@ -1035,28 +1087,6 @@ function updateFireSystem(){
       }
     }
   }
-}
-
-// ── DEBRIS SYSTEM ─────────────────────────────────────────────────
-function updateDebrisSystem(){
-  // Periodically spawn falling debris
-  if(Math.random()<0.008+G.wave*0.002){
-    G.debris.push({
-      x:Math.random()*cW(), y:-20,
-      vx:(-0.5+Math.random())*2, vy:2+Math.random()*4,
-      life:80+Math.random()*60, rot:Math.random()*Math.PI*2,
-      rotV:(-0.1+Math.random()*0.2),
-      w:6+Math.random()*20, h:4+Math.random()*14,
-      col:Math.random()<0.5?'#5a4a30':'#444438'
-    });
-  }
-  for(let i=G.debris.length-1;i>=0;i--){
-    const d=G.debris[i];
-    d.x+=d.vx; d.y+=d.vy; d.vy+=0.12; d.rot+=d.rotV; d.life--;
-    // Impact
-    if(d.y>cH()&&!d.landed){
-      d.landed=true; d.vy=0; d.vx=0;
-      SFX.debrisCrash();
       triggerShake(3,12);
       // Damage player if hit
       if(G.player&&Math.hypot(G.player.x-d.x,G.player.y-d.y)<20){
@@ -1688,16 +1718,15 @@ function drawParticle(pt){
 
   C.restore();
 }
-
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+// draw: background → environment → enemies → player → bullets → UI
 // ================================================================
 //  RENDER DISPATCH
 // ================================================================
 function render(){
   if(viewMode==='3p') render3P(); else render1P();
 }
-
-// ================================================================
-//  RENDER -- 3RD PERSON
+ER -- 3RD PERSON
 // ================================================================
 function render3P(){
   const W=cW(), H=cH(), p=G.player;
@@ -1814,6 +1843,8 @@ for(
 ){
   drawParticle(G.particles[i]);
 }
+// ================================================================
+//  REND
 
   // Asteroids
   for(const ast of G.asteroids){
@@ -3598,6 +3629,14 @@ function render3P(){
   }
 
   // Zombies
+  C.fillStyle='#222220'; C.fillRect(-290,-101,95,8);
+  C.fillStyle='#1e1e1c'; C.fillRect(-280,-106,85,3);
+
+  // Muzzle brake
+  C.fillStyle='#2e2e2a'; C.fillRect(-302,-104,16,14);
+  C.fillStyle='#1a1a18';
+  C.fillRect(-300,-103,3,5); C.fillRect(-296,-103,3,5); C.fillRect(-292,-103,3,5);
+  C.fillRect(-300
   for(const z of G.zombies) drawZombie(z);
 
   // Bullets
@@ -3874,15 +3913,7 @@ function drawFPSGun(W,H){
   // Gas block + front sight
   C.fillStyle='#2a2a22'; C.fillRect(-202,-122,10,18); C.fillRect(-199,-126,4,6);
 
-  // Barrel
-  C.fillStyle='#222220'; C.fillRect(-290,-101,95,8);
-  C.fillStyle='#1e1e1c'; C.fillRect(-280,-106,85,3);
-
-  // Muzzle brake
-  C.fillStyle='#2e2e2a'; C.fillRect(-302,-104,16,14);
-  C.fillStyle='#1a1a18';
-  C.fillRect(-300,-103,3,5); C.fillRect(-296,-103,3,5); C.fillRect(-292,-103,3,5);
-  C.fillRect(-300,-98,3,4);  C.fillRect(-296,-98,3,4);
+  // Barrel,-98,3,4);  C.fillRect(-296,-98,3,4);
 
   // Red dot scope
   C.fillStyle='#2a2a26'; C.fillRect(-70,-130,40,16);
