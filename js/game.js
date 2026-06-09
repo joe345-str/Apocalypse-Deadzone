@@ -29,6 +29,9 @@ let shakeX=0, shakeY=0, shakeMag=0, shakeDur=0;
 
 function cW(){ return canvas.width  / DPR; }
 function cH(){ return canvas.height / DPR; }
+let friendlyUFO = null;
+let hostileUFO = null;
+let allies = [];
 
 // ================================================================
 //  SPRITE CACHE SYSTEM
@@ -326,7 +329,33 @@ function resizeCanvas(){
     G.player.x=Math.max(G.player.r,Math.min(cW()-G.player.r,G.player.x));
     G.player.y=Math.max(G.player.r,Math.min(cH()-G.player.r,G.player.y));
   }
+| Sprite | Frame 1 | Frame 2 | Frame 3 | Frame 4 |
+| --- | --- | --- | --- | --- |
+| **Friendly UFO** | Idle hover | Beam charging | Beam firing | Cooldown flicker |
+| **Hostile UFO** | Idle hover | Plasma charge | Plasma blast | Damage flicker |
+| **Alien Soldier** | Idle stance | Step forward | Attack swing | Recoil/ready |
+const spriteHeight = 32;
+const frameCount = 4;
+let frame = 0;
+
+function drawSprite(ctx, img, x, y, tick) {
+  frame = Math.floor(tick / 10) % frameCount;
+  ctx.drawImage(img, 0, frame * spriteHeight, 32, 32, x, y, 32, 32);
 }
+
+}st sbtnEl=document.getElementById('sbtn');
+sbtnEl.addEventListener('touchstart',e=>{e.preventDefault();SFX.unlock();mobileFire=true; sbtnEl.classList.add('firing');},   {passive:false});
+sbtnEl.addEventListener('touchend',  e=>{e.preventDefault();              mobileFire=false;sbtnEl.classList.remove('firing');},{passive:false});
+sbtnEl.addEventListener('touchcancel',()=>{mobileFire=false;sbtnEl.classList.remove('firing');});
+sbtnEl.addEventListener('mousedown', ()=>{SFX.unlock();mobileFire=true; sbtnEl.classList.add('firing');});
+sbtnEl.addEventListener('mouseup',   ()=>{              mobileFire=false;sbtnEl.classList.remove('firing');});
+
+const rbtnEl=document.getElementById('rbtn');
+rbtnEl.addEventListener('touchstart',e=>{e.preventDefault();SFX.unlock();doReload();},{passive:false});
+rbtnEl.addEventListener('click',()=>doReload());
+
+// ── VIEW / PAUSE / NOTIFS ─────────────────────────────────────────
+func
 resizeCanvas();
 window.addEventListener('resize',resizeCanvas);
 
@@ -362,19 +391,7 @@ canvas.addEventListener('mouseup',  e=>{if(e.button===0) mShooting=false;});
   });
 })();
 
-const sbtnEl=document.getElementById('sbtn');
-sbtnEl.addEventListener('touchstart',e=>{e.preventDefault();SFX.unlock();mobileFire=true; sbtnEl.classList.add('firing');},   {passive:false});
-sbtnEl.addEventListener('touchend',  e=>{e.preventDefault();              mobileFire=false;sbtnEl.classList.remove('firing');},{passive:false});
-sbtnEl.addEventListener('touchcancel',()=>{mobileFire=false;sbtnEl.classList.remove('firing');});
-sbtnEl.addEventListener('mousedown', ()=>{SFX.unlock();mobileFire=true; sbtnEl.classList.add('firing');});
-sbtnEl.addEventListener('mouseup',   ()=>{              mobileFire=false;sbtnEl.classList.remove('firing');});
-
-const rbtnEl=document.getElementById('rbtn');
-rbtnEl.addEventListener('touchstart',e=>{e.preventDefault();SFX.unlock();doReload();},{passive:false});
-rbtnEl.addEventListener('click',()=>doReload());
-
-// ── VIEW / PAUSE / NOTIFS ─────────────────────────────────────────
-function setView(v){
+contion setView(v){
   viewMode=v;
   document.getElementById('v3b').classList.toggle('on',v==='3p');
   document.getElementById('v1b').classList.toggle('on',v==='1p');
@@ -681,6 +698,127 @@ function update(){
     }
     if(hit) G.bullets.splice(i,1);
   }
+class UFO {
+    constructor(x, y, friendly = true) {
+        this.x = x;
+        this.y = y;
+        this.w = 48;
+        this.h = 24;
+        this.friendly = friendly;
+        this.hp = friendly ? 200 : 300;
+        this.cooldown = 0;
+        this.speed = friendly ? 0.5 : 1.2;
+    }
+
+    update(player, zombies, bullets, allies) {
+        // Hover movement
+        this.x += Math.sin(Date.now() / 600) * this.speed;
+
+        if (this.friendly) {
+            this.updateFriendly(zombies, allies);
+        } else {
+            this.updateHostile(player, bullets);
+        }
+    }
+
+    updateFriendly(zombies, allies) {
+        if (this.cooldown > 0) this.cooldown--;
+
+        // Shoot zombies
+        let target = zombies[0];
+        if (target && this.cooldown === 0) {
+            bullets.push({
+                x: this.x,
+                y: this.y + 20,
+                dx: (target.x - this.x) / 20,
+                dy: (target.y - this.y) / 20,
+                friendly: true
+            });
+            this.cooldown = 40;
+        }
+// Spawn friendly UFO once per game
+if (!friendlyUFO) {
+    friendlyUFO = new UFO(canvas.width/2, 60, true);
+}
+
+// Spawn hostile UFO during apocalyptic waves
+if (apocalypseActive && !hostileUFO) {
+    hostileUFO = new UFO(canvas.width/2, 80, false);
+}
+if (friendlyUFO) friendlyUFO.update(player, zombies, bullets, allies);
+if (hostileUFO) hostileUFO.update(player, zombies, bullets);
+
+        // Drop alien soldier
+        if (Math.random() < 0.002) {
+            allies.push(new AlienSoldier(this.x, this.y + 20));
+        }
+    }
+
+    updateHostile(player, bullets) {
+        if (this.cooldown > 0) this.cooldown--;
+
+        // Fire at player
+        if (this.cooldown === 0) {
+            bullets.push({
+                x: this.x,
+                y: this.y + 20,
+                dx: (player.x - this.x) / 25,
+                dy: (player.y - this.y) / 25,
+                friendly: false
+            });
+            this.cooldown = 60;
+        }
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = this.friendly ? "#7fffd4" : "#ff4f4f";
+        ctx.fillRect(this.x - this.w/2, this.y - this.h/2, this.w, this.h);
+
+        // Dome
+        ctx.fillStyle = "#a0e8ff";
+        ctx.fillRect(this.x - 12, this.y - 20, 24, 12);
+    }
+}
+class AlienSoldier {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.speed = 2.2;
+        this.size = 12;
+        this.hp = 40;
+    }
+
+    update(zombies) {
+        let target = zombies[0];
+        if (!target) return;
+
+        let dx = target.x - this.x;
+        let dy = target.y - this.y;
+        let d = Math.hypot(dx, dy);
+
+        this.x += (dx / d) * this.speed;
+        this.y += (dy / d) * this.speed;
+
+        // Damage zombie
+        if (d < 20) {
+            target.hp -= 1.5;
+        }
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = "#32ff7e";
+        ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+    }
+}
+// Spawn friendly UFO once per game
+if (!friendlyUFO) {
+    friendlyUFO = new UFO(canvas.width/2, 60, true);
+}
+
+// Spawn hostile UFO during apocalyptic waves
+if (apocalypseActive && !hostileUFO) {
+    hostileUFO = new UFO(canvas.width/2, 80, false);
+}
 
   // Particles
   for(let i=G.particles.length-1;i>=0;i--){
@@ -1315,6 +1453,8 @@ function drawZombie(z){
   else if(z.ti===1) sprite = SPRITES.runner;
   else if(z.ti===2) sprite = SPRITES.tank;
   else sprite = SPRITES.boss;
+if (friendlyUFO) friendlyUFO.update(player, zombies, bullets, allies);
+if (hostileUFO) hostileUFO.update(player, zombies, bullets);
 
   const scale = z.size / 36;
 
@@ -1538,15 +1678,6 @@ function drawParticle(pt){
       sz * 2
     );
 
-  }else{
-
-    C.fillStyle = pt.col;
-
-    C.beginPath();
-
-    C.arc(
-      pt.x,
-      pt.y,
       pt.sz,
       0,
       Math.PI*2
@@ -1573,7 +1704,16 @@ function render3P(){
   C.save();
   C.translate(shakeX,shakeY);
 
-  // Background
+  // Backg
+  }else{
+
+    C.fillStyle = pt.col;
+
+    C.beginPath();
+
+    C.arc(
+      pt.x,
+      pt.y,round
   const bgG=C.createRadialGradient(W/2,H/2,50,W/2,H/2,Math.max(W,H)*0.7);
   bgG.addColorStop(0,'#141410'); bgG.addColorStop(1,'#080806');
   C.fillStyle=bgG; C.fillRect(0,0,W,H);
