@@ -1,4 +1,4 @@
-name: Deploy Apocalypse-Deadzone
+name: Deploy DeadZone
 
 on:
   push:
