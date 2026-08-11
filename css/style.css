@@ -281,6 +281,7 @@ html, body {
   box-shadow: 0 8px 30px rgba(232,0,26,0.4);
   color: #fff;
 }
+<button class="mbtn g" onclick="startGame()">▶ &nbsp; START GAME</button>
 
 /* Bottom info strip */
 .title-footer {
