@@ -31,7 +31,7 @@
     <div class="gsub">◈ &nbsp; wave survival &nbsp; ◈ &nbsp; fps &amp; top-down &nbsp; ◈</div>
 
     <div class="title-menu">
-      <button class="mbtn g" onclick="SFX.unlock(); startGame()">▶ &nbsp; START GAME</button>
+      <button class="mbtn g" onclick="startGame()">▶ &nbsp; START GAME</button>
       <button class="mbtn" onclick="gotoInfo('sHTP')">
         <span>HOW TO PLAY</span>
       </button>
@@ -226,8 +226,13 @@
     <div class="rbtn" id="rbtn">
       <span class="ri">↺</span>
       <span>RELOAD</span>
-    </div>
-    <div class="aabtn" id="aabtnMobile" onclick="toggleAutoAim()">
+    <!-- KNIFE / SHAKE OFF BUTTON -->
+<button id="knifeBtn" class="knifebtn" onclick="knifeAttack()">
+<span>🔪</span>
+  <small>SHAKE</small>
+</button>
+  </div>
+ <div class="aabtn" id="aabtnMobile" onclick="toggleAutoAim()">
       <span>⊕</span>
       <span>AIM</span>
     </div>
@@ -258,7 +263,7 @@
   </div>
 
 </div>
-
+<link rel="stylesheet" href="css/style.css">
 <script src="js/game.js"></script>
 </body>
 </html>
