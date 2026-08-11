@@ -653,6 +653,13 @@ kbd {
   box-shadow: 0 0 40px rgba(232,0,26,0.6), inset 0 0 20px rgba(232,0,26,0.2);
 }
 
+<!-- KNIFE / SHAKE OFF BUTTON -->
+<button id="knifeBtn" class="knifebtn" onclick="knifeAttack()">
+  🔪
+  <span>SHAKE</span>
+</button>
+}
+
 /* RELOAD button */
 .rbtn {
   position: absolute;
@@ -673,6 +680,42 @@ kbd {
 }
 .rbtn:active { background: rgba(255,140,0,0.3); }
 .rbtn .ri { font-size: 20px; line-height: 1; }
+}
+
+/* KNIFE / ZOMBIE PUSH BUTTON */
+.kbtn {
+  position:absolute;
+  bottom:130px;
+  right:25px;
+  width:58px;
+  height:58px;
+  border-radius:50%;
+  background:rgba(232,0,26,.15);
+  border:2px solid var(--red);
+  color:white;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font-data);
+  cursor:pointer;
+  pointer-events:all;
+  box-shadow:0 0 15px rgba(232,0,26,.3);
+}
+
+.kbtn span {
+  font-size:22px;
+}
+
+.kbtn small {
+  font-size:7px;
+  letter-spacing:1px;
+}
+
+.kbtn:active {
+  transform:scale(.88);
+  background:rgba(232,0,26,.5);
+}
 
 /* ── OVERLAYS ── */
 .ovr {
@@ -877,6 +920,42 @@ kbd {
 @keyframes aimPulse {
   0%,100% { box-shadow: 0 0 8px rgba(255,140,0,0.2); }
   50%      { box-shadow: 0 0 18px rgba(255,140,0,0.5); }
+}
+
+/* ── KNIFE / SHAKE OFF BUTTON ── */
+.knifebtn {
+  position: absolute;
+  bottom: 55px;
+  right: 55px;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: rgba(220,0,0,0.15);
+  border: 2px solid rgba(255,50,50,0.7);
+  color: #ff4444;
+  font-family: var(--font-data);
+  font-weight: 900;
+  font-size: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 40;
+  pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 0 12px rgba(255,0,0,.3);
+}
+
+.knifebtn span {
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+
+.knifebtn:active {
+  transform: scale(.88);
+  background: rgba(255,0,0,.4);
+  box-shadow: 0 0 25px red;
 }
 
 /* ── AUTO-AIM MOBILE BUTTON ── */
