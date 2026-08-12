@@ -31,7 +31,9 @@
     <div class="gsub">◈ &nbsp; wave survival &nbsp; ◈ &nbsp; fps &amp; top-down &nbsp; ◈</div>
 
     <div class="title-menu">
-      <button class="mbtn g" onclick="startGame()">▶ &nbsp; START GAME</button>
+      <button type="button" class="mbtn g" id="startBtn">
+  ▶ &nbsp; START GAME
+      </button>
       <button class="mbtn" onclick="gotoInfo('sHTP')">
         <span>HOW TO PLAY</span>
       </button>
@@ -265,5 +267,22 @@
 </div>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/game.js"></script>
+<script>
+document.getElementById('startBtn').addEventListener('click', function () {
+  try {
+    if (typeof SFX !== 'undefined' && SFX.unlock) {
+      SFX.unlock();
+    }
+
+    if (typeof startGame === 'function') {
+      startGame();
+    } else {
+      console.error('DEAD ZONE: startGame() is not defined.');
+    }
+  } catch (err) {
+    console.error('DEAD ZONE START ERROR:', err);
+  }
+});
+</script>
 </body>
 </html>
