@@ -1,4 +1,4 @@
-# DEAD ZONE — Zombie Shooter
+# APOCALYPSE DEADZONE — Zombie Shooter
 
 HTML5 zombie wave survival shooter.
 
