@@ -24,5 +24,4 @@ js/game.js      ← full game engine
 README.md
 ```
 
-## Publishing for Revenue
-Upload to: itch.io, GameDistribution, CrazyGames, Poki, GameMonetize, Newgrounds
+
